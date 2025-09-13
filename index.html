@@ -1496,167 +1496,136 @@ function verifyPassword() {
 }
 </script>
 
-</script>
-    // 修復 toggleStamp 函數 - 替換原有的 toggleStamp 函數
-async function toggleStamp(index) {
-    if (!currentStudentData.studentName) {
-        showStudentSelectionAlert();
-        return;
-    }
-    
-    const nextStampIndex = currentStudentData.stamps.length;
-    
-    if (currentStudentData.stamps.includes(index)) {
-        // 移除章印 - 只能移除最後一個
-        if (index === Math.max(...currentStudentData.stamps)) {
-            currentStudentData.stamps = currentStudentData.stamps.filter(s => s !== index);
-        } else {
-            alert('只能移除最後一個蓋章！');
+  <script>
+    // ===== 你的 JavaScript Code 開始 =====
+    async function toggleStamp(index) {
+        if (!currentStudentData.studentName) {
+            showStudentSelectionAlert();
             return;
         }
-    } else {
-        // 新增章印 - 必須按順序
-        if (index === nextStampIndex) {
-            currentStudentData.stamps.push(index);
-            currentStudentData.stamps.sort((a, b) => a - b);
+        
+        const nextStampIndex = currentStudentData.stamps.length;
+        
+        if (currentStudentData.stamps.includes(index)) {
+            if (index === Math.max(...currentStudentData.stamps)) {
+                currentStudentData.stamps = currentStudentData.stamps.filter(s => s !== index);
+            } else {
+                alert('只能移除最後一個蓋章！');
+                return;
+            }
         } else {
-            alert('請按照順序集點！');
-            return;
-        }
-    }
-    
-    // 立即儲存到本地
-    StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
-    
-    // 更新UI
-    generateStamps();
-    
-    // 背景儲存到Firebase（不等待結果避免阻塞UI）
-    saveToFirebase().catch(error => {
-        console.error('Firebase儲存失敗，但本地已儲存:', error);
-    });
-}
-
-// 修復 addStampsByRule 函數 - 替換原有的函數
-async function addStampsByRule(count) {
-    if (!currentStudentData.studentName) {
-        showStudentSelectionAlert();
-        return;
-    }
-
-    if (currentStudentData.currentLessonStamps + count > 5) {
-        alert(`本堂課已累積 ${currentStudentData.currentLessonStamps} 個蓋章，最多只能累積 5 個蓋章！`);
-        return;
-    }
-    
-    // 新增指定數量的章印
-    for (let i = 0; i < count; i++) {
-        for (let j = 0; j < 80; j++) {
-            if (!currentStudentData.stamps.includes(j)) {
-                currentStudentData.stamps.push(j);
+            if (index === nextStampIndex) {
+                currentStudentData.stamps.push(index);
                 currentStudentData.stamps.sort((a, b) => a - b);
-                currentStudentData.currentLessonStamps++;
-                break;
+            } else {
+                alert('請按照順序集點！');
+                return;
             }
         }
-    }
-    
-    // 立即儲存到本地
-    StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
-    
-    // 更新UI
-    generateStamps();
-    
-    // 背景儲存到Firebase
-    saveToFirebase().catch(error => {
-        console.error('Firebase儲存失敗，但本地已儲存:', error);
-    });
-    
-    showFeedback(`已新增 ${count} 個蓋章！本堂課累積：${currentStudentData.currentLessonStamps}/5`);
-}
-
-// 改善 generateStamps 函數，確保正確顯示已儲存的狀態
-function generateStamps() {
-    const stampsGrid = document.getElementById('stampsGrid');
-    if (!stampsGrid) return;
-    
-    stampsGrid.innerHTML = '';
-    
-    for (let i = 0; i < 80; i++) {
-        const stampDiv = document.createElement('div');
-        stampDiv.className = 'stamp-circle';
-        stampDiv.setAttribute('data-index', i);
-        stampDiv.onclick = () => toggleStamp(i);
         
-        // 檢查這個位置是否已經蓋章
-        if (currentStudentData.stamps.includes(i)) {
-            stampDiv.classList.add('stamped');
-            stampDiv.innerHTML = '✓';
-        } else {
-            stampDiv.innerHTML = (i + 1).toString();
-        }
-        
-        stampsGrid.appendChild(stampDiv);
-    }
-    
-    // 更新進度顯示
-    updateProgressDisplay();
-    
-    // 儲存當前狀態到本地（確保每次UI更新都有儲存）
-    if (currentStudentData.studentName) {
         StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
-    }
-}
-
-// 改善初始化流程
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 頁面載入完成，開始初始化許振穎的集點卡...');
-    
-    // 立即顯示80個圓圈
-    generateStamps();
-    updateProgressDisplay();
-    
-    // 初始化固定學生
-    initializeCard();
-    
-    // 等待一下再嘗試從Firebase載入（確保Firebase完全載入）
-    setTimeout(async () => {
-        try {
-            await loadFromFirebase();
-            console.log('✅ Firebase資料載入完成');
-        } catch (error) {
-            console.log('📂 使用本地資料，Firebase載入失敗:', error);
-        }
-    }, 1000);
-});
-
-// 確保在離開頁面時儲存資料
-window.addEventListener('beforeunload', function() {
-    if (currentStudentData.studentName) {
-        // 最後一次本地儲存
-        StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
-        
-        // 嘗試快速同步到Firebase
-        if (window.db) {
-            saveToFirebase().catch(() => {
-                // 靜默處理失敗，因為頁面即將關閉
-            });
-        }
-    }
-});
-
-// 定期自動儲存（每30秒）
-setInterval(() => {
-    if (currentStudentData.studentName && currentStudentData.stamps.length > 0) {
-        StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
-        
-        // 背景同步到Firebase
+        generateStamps();
         saveToFirebase().catch(error => {
-            console.log('定期儲存：Firebase同步失敗，但本地已儲存');
+            console.error('Firebase儲存失敗，但本地已儲存:', error);
         });
     }
-}, 30000);
-<script>
+
+    async function addStampsByRule(count) {
+        if (!currentStudentData.studentName) {
+            showStudentSelectionAlert();
+            return;
+        }
+
+        if (currentStudentData.currentLessonStamps + count > 5) {
+            alert(`本堂課已累積 ${currentStudentData.currentLessonStamps} 個蓋章，最多只能累積 5 個蓋章！`);
+            return;
+        }
+        
+        for (let i = 0; i < count; i++) {
+            for (let j = 0; j < 80; j++) {
+                if (!currentStudentData.stamps.includes(j)) {
+                    currentStudentData.stamps.push(j);
+                    currentStudentData.stamps.sort((a, b) => a - b);
+                    currentStudentData.currentLessonStamps++;
+                    break;
+                }
+            }
+        }
+        
+        StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
+        generateStamps();
+        saveToFirebase().catch(error => {
+            console.error('Firebase儲存失敗，但本地已儲存:', error);
+        });
+        
+        showFeedback(`已新增 ${count} 個蓋章！本堂課累積：${currentStudentData.currentLessonStamps}/5`);
+    }
+
+    function generateStamps() {
+        const stampsGrid = document.getElementById('stampsGrid');
+        if (!stampsGrid) return;
+        
+        stampsGrid.innerHTML = '';
+        
+        for (let i = 0; i < 80; i++) {
+            const stampDiv = document.createElement('div');
+            stampDiv.className = 'stamp-circle';
+            stampDiv.setAttribute('data-index', i);
+            stampDiv.onclick = () => toggleStamp(i);
+            
+            if (currentStudentData.stamps.includes(i)) {
+                stampDiv.classList.add('stamped');
+                stampDiv.innerHTML = '✓';
+            } else {
+                stampDiv.innerHTML = (i + 1).toString();
+            }
+            
+            stampsGrid.appendChild(stampDiv);
+        }
+        
+        updateProgressDisplay();
+        
+        if (currentStudentData.studentName) {
+            StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async function() {
+        console.log('🚀 頁面載入完成，開始初始化許振穎的集點卡...');
+        generateStamps();
+        updateProgressDisplay();
+        initializeCard();
+        
+        setTimeout(async () => {
+            try {
+                await loadFromFirebase();
+                console.log('✅ Firebase資料載入完成');
+            } catch (error) {
+                console.log('📂 使用本地資料，Firebase載入失敗:', error);
+            }
+        }, 1000);
+    });
+
+    window.addEventListener('beforeunload', function() {
+        if (currentStudentData.studentName) {
+            StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
+            if (window.db) {
+                saveToFirebase().catch(() => {});
+            }
+        }
+    });
+
+    setInterval(() => {
+        if (currentStudentData.studentName && currentStudentData.stamps.length > 0) {
+            StudentDataManager.saveStudentData(currentStudentData.studentName, currentStudentData);
+            saveToFirebase().catch(error => {
+                console.log('定期儲存：Firebase同步失敗，但本地已儲存');
+            });
+        }
+    }, 30000);
+    // ===== 你的 JavaScript Code 結束 =====
+  </script>
+
 
 <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97e2aa81a32b6c01',t:'MTc1NzcxNDMwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
